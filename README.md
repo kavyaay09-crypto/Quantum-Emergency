@@ -1,6 +1,4 @@
-from pathlib import Path
-
-readme = """# QuantumResQ 🚑⚛️
+## QuantumResQ 🚑⚛️
 
 **AI + Quantum-Powered Emergency Response & Ambulance Dispatch System**
 
