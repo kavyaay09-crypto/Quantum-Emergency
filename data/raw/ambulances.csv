@@ -1,0 +1,9 @@
+ambulance_id,latitude,longitude,status
+AMB001,12.9716,77.5946,available
+AMB002,12.9352,77.6245,available
+AMB003,12.9987,77.57,busy
+AMB004,13.028,77.589,available
+AMB005,12.9141,77.61,available
+AMB006,13.0358,77.597,busy
+AMB007,12.925,77.59,available
+AMB008,12.985,77.62,available

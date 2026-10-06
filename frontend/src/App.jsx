@@ -208,8 +208,11 @@ function App() {
           body: JSON.stringify({
             ambulance_id: assignment.ambulance_id,
             zone_id: assignment.zone_id,
-            hospital_id:
-              assignment.hospital_id || "H001",
+            zone_name:
+              assignment.zone_name ||
+              assignment.zone_id ||
+              "Emergency Hotspot",
+            hospital_id: assignment.hospital_id || "H001",
           }),
         }
       );
@@ -217,6 +220,8 @@ function App() {
       if (!response.ok) {
         throw new Error("Assignment failed");
       }
+
+      setSelectedAmbulance(assignment.ambulance_id);
 
       showNotification(
         `QAOA assignment accepted for ${assignment.ambulance_id}`
@@ -323,13 +328,16 @@ function App() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            available_emergency_beds:
-              emergencyBeds,
 
-            available_icu_beds:
-              icuBeds,
+          body: JSON.stringify({
+            emergency_beds: emergencyBeds,
+            icu_beds: icuBeds,
+            trauma_available: Number(
+              hospitals.find((h) => h.hospital_id === hospitalId)
+                ?.trauma_available ?? 0
+            ),
           }),
+
         }
       );
 
@@ -748,6 +756,9 @@ function App() {
                 }
                 sendHospitalAlert={
                   sendHospitalAlert
+                }
+                selectedAmbulance={
+                  selectedAmbulance
                 }
               />
             )}
@@ -1739,9 +1750,20 @@ function AmbulanceView({
   hospitals,
   updateAmbulanceStatus,
   sendHospitalAlert,
+  selectedAmbulance,
 }) {
 
+  const assignedAmbulances = ambulances.filter(
+    (a) =>
+      a.status === "assigned" ||
+      a.status === "en_route" ||
+      a.status === "arrived"
+  );
+
   const assigned =
+    ambulances.find(
+      (a) => a.ambulance_id === selectedAmbulance
+    ) ||
     ambulances.find(
       (a) =>
         a.status === "assigned" ||
@@ -1749,8 +1771,7 @@ function AmbulanceView({
         a.status === "arrived"
     ) ||
     ambulances.find(
-      (a) =>
-        a.status === "available"
+      (a) => a.status === "available"
     ) ||
     ambulances[0];
 
@@ -1854,23 +1875,33 @@ function AmbulanceView({
             <div className="vertical-route"></div>
 
             <div className="field-location">
-
               <span className="route-icon destination">
                 🚨
               </span>
 
               <div>
-
-                <small>
-                  DESTINATION
-                </small>
+                <small>DESTINATION</small>
 
                 <strong>
-                  Emergency Hotspot
+                  {assigned?.current_assignment?.zone_name ||
+                    "Emergency Hotspot"}
                 </strong>
-
               </div>
+            </div>
 
+            <div className="field-location">
+              <span className="route-icon destination">
+                🏥
+              </span>
+
+              <div>
+                <small>RECEIVING HOSPITAL</small>
+
+                <strong>
+                  {assigned?.current_assignment?.hospital_id ||
+                    "Not assigned"}
+                </strong>
+              </div>
             </div>
 
           </div>
@@ -2068,6 +2099,101 @@ function HospitalView({
         </div>
 
       </div>
+
+      {/* INCOMING AMBULANCE ALERTS */}
+
+      {hospitals.some(
+        (hospital) =>
+          Array.isArray(hospital.incoming) &&
+          hospital.incoming.length > 0
+      ) && (
+          <section className="panel incoming-alert-panel">
+
+            <div className="panel-header">
+
+              <div>
+                <div className="eyebrow">
+                  LIVE EMERGENCY COORDINATION
+                </div>
+
+                <h2>
+                  Incoming Ambulance Alerts
+                </h2>
+              </div>
+
+              <div className="map-status">
+                <span className="live-dot"></span>
+                LIVE
+              </div>
+
+            </div>
+
+            <div className="incoming-alert-list">
+
+              {hospitals.flatMap(
+                (hospital) =>
+                  (hospital.incoming || []).map(
+                    (alert, index) => (
+
+                      <div
+                        className={`incoming-alert ${alert.status || "incoming"
+                          }`}
+                        key={`${hospital.hospital_id}-${alert.ambulance_id}-${index}`}
+                      >
+
+                        <div className="incoming-alert-icon">
+                          🚑
+                        </div>
+
+                        <div className="incoming-alert-info">
+
+                          <strong>
+                            {alert.ambulance_id}
+                          </strong>
+
+                          <span>
+                            Hospital: {hospital.hospital_id}
+                          </span>
+
+                          <span>
+                            From:{" "}
+                            {alert.zone_name ||
+                              "Emergency Response"}
+                          </span>
+
+                        </div>
+
+                        <div className="incoming-alert-status">
+
+                          <strong>
+                            {String(
+                              alert.status ||
+                              "incoming"
+                            )
+                              .replace("_", " ")
+                              .toUpperCase()}
+                          </strong>
+
+                          <small>
+                            {alert.time
+                              ? new Date(
+                                alert.time
+                              ).toLocaleTimeString()
+                              : ""}
+                          </small>
+
+                        </div>
+
+                      </div>
+
+                    )
+                  )
+              )}
+
+            </div>
+
+          </section>
+        )}
 
       {/* CAPACITY SUMMARY */}
 
